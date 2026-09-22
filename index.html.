@@ -6,6 +6,8 @@
     <title>Lex Bufete - Cotizador de Hipotecas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Nueva librería para generar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         .bg-legal { background-color: #1a2a3a; }
         .text-legal { color: #1a2a3a; }
@@ -64,12 +66,15 @@
                     </div>
                 </div>
 
-                <button onclick="compartir()" class="w-full mt-6 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg shadow-md transition-all uppercase text-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                    </svg>
-                    Compartir / Guardar
-                </button>
+                <!-- Botones de Exportación Actualizados -->
+                <div class="grid grid-cols-2 gap-3 mt-6">
+                    <button onclick="exportarJPG()" class="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg shadow-md transition-all uppercase text-xs">
+                        Descargar JPG
+                    </button>
+                    <button onclick="exportarPDF()" class="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg shadow-md transition-all uppercase text-xs">
+                        Descargar PDF
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -218,50 +223,57 @@
             outTotal.innerText = fMoneda(total);
         }
 
-        // Evento principal: Cuando cambia el monto, se autocalculan los honorarios
+        // Eventos
         montoIn.addEventListener('input', () => {
             const monto = parseFloat(montoIn.value) || 0;
             honorarioIn.value = calcularHonorariosSugeridos(monto);
             actualizarVista();
         });
-
-        // Eventos secundarios: Actualizar la vista al escribir en los demás campos
         dirigidoIn.addEventListener('input', actualizarVista);
         clienteIn.addEventListener('input', actualizarVista);
         tramiteIn.addEventListener('change', actualizarVista);
-        honorarioIn.addEventListener('input', actualizarVista); // Por si se modifica manualmente
+        honorarioIn.addEventListener('input', actualizarVista);
 
         // Inicializar la vista al cargar
         actualizarVista();
 
-        // Función para Generar Imagen y Compartir
-        async function compartir() {
+        // --------------------------------------------------
+        // NUEVAS FUNCIONES DE EXPORTACIÓN (JPG y PDF)
+        // --------------------------------------------------
+
+        const nombreBase = "Cotizacion_Lex_Bufete";
+
+        // Función para descargar en formato JPG
+        function exportarJPG() {
             const nodoCarta = document.getElementById('cotizacion-export');
-            
-            // Toma captura del HTML y lo convierte en Imagen (Canvas)
             html2canvas(nodoCarta, { scale: 2 }).then(canvas => {
-                canvas.toBlob(async function(blob) {
-                    const nombreArchivo = "Cotizacion_Lex_Bufete.png";
-                    const archivo = new File([blob], nombreArchivo, { type: "image/png" });
-                    
-                    // Si el dispositivo es un móvil y soporta compartir archivos nativamente (WhatsApp, etc.)
-                    if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
-                        try {
-                            await navigator.share({
-                                title: 'Cotización Lex Bufete',
-                                files: [archivo]
-                            });
-                        } catch (error) {
-                            console.log("El usuario canceló el menú de compartir.");
-                        }
-                    } else {
-                        // En computadora, se descarga la imagen automáticamente
-                        const enlace = document.createElement('a');
-                        enlace.download = nombreArchivo;
-                        enlace.href = canvas.toDataURL('image/png');
-                        enlace.click();
-                    }
-                });
+                const enlace = document.createElement('a');
+                enlace.download = `${nombreBase}.jpg`;
+                // Se usa image/jpeg con calidad de 0.9 (alta)
+                enlace.href = canvas.toDataURL('image/jpeg', 0.9);
+                enlace.click();
+            });
+        }
+
+        // Función para descargar en formato PDF
+        function exportarPDF() {
+            const nodoCarta = document.getElementById('cotizacion-export');
+            html2canvas(nodoCarta, { scale: 2 }).then(canvas => {
+                // Obtenemos la imagen del canvas
+                const imgData = canvas.toDataURL('image/png');
+                
+                // Instanciamos jsPDF (formato carta/A4 en orientación vertical)
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                
+                // Ajustamos las medidas de la imagen al tamaño de la página A4
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const imgProps = pdf.getImageProperties(imgData);
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                
+                // Insertamos la imagen y guardamos
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`${nombreBase}.pdf`);
             });
         }
     </script>
