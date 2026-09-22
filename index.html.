@@ -137,7 +137,7 @@
 
                 <div class="text-center mt-12 mb-8">
                     <p class="text-sm mb-4">Atentamente,</p>
-                    <img src="firma.png" alt="Firma Representante Legal" class="h-24 mx-auto object-contain" onerror="this.style.display='none'">
+                    <img src="firma.png" alt="Firma Representante Legal" class="h-24 mx-auto object-contain">
                     <div class="border-t border-black inline-block px-10 pt-2 mt-1">
                         <p class="font-bold text-sm uppercase">Representante Legal</p>
                         <p class="text-sm">Corporación Lex Bufete</p>
